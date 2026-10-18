@@ -1,0 +1,119 @@
+import funkin.play.song.Song;
+import funkin.play.PlayState;
+import funkin.play.notes.Strumline;
+import funkin.play.notes.StrumlineNote;
+import funkin.data.notestyle.NoteStyleRegistry;
+import flixel.FlxSprite;
+import flixel.tweens.FlxTween;
+import flixel.tweens.FlxEase;
+import funkin.Paths;
+import funkin.Conductor;
+import flixel.group.FlxSpriteGroup;
+
+class SplitEx extends Song
+{
+    var introGroup:FlxSpriteGroup;
+    var areText:FlxSprite;
+    var youText:FlxSprite;
+    var readyText:FlxSprite;
+    var tA1:Bool = false; var tY1:Bool = false; var tR1:Bool = false;
+    var tA2:Bool = false; var tY2:Bool = false; var tR2:Bool = false;
+
+    public function new() {
+        super("split-ex");
+    }
+
+    override function onCreate()
+    {
+        super.onCreate();
+        resetFlags();
+        var game = PlayState.instance;
+        if (game == null) return;
+
+        var noteStyle = NoteStyleRegistry.instance.fetchEntry('amor');
+        if (noteStyle != null && game.opponentStrumline != null)
+        {
+            game.opponentStrumline.noteStyle = noteStyle;
+            if (game.opponentStrumline.strumlineNotes != null) {
+                game.opponentStrumline.strumlineNotes.clear();
+                for (i in 0...Strumline.KEY_COUNT) {
+                    var dir = Strumline.DIRECTIONS[i];
+                    var child = new StrumlineNote(noteStyle, false, dir);
+                    child.x = game.opponentStrumline.getXPos(dir) + Strumline.INITIAL_OFFSET;
+                    child.y = 0;
+                    noteStyle.applyStrumlineOffsets(child);
+                    game.opponentStrumline.strumlineNotes.add(child);
+                }
+            }
+        }
+
+        introGroup = new FlxSpriteGroup();
+        introGroup.cameras = [game.camHUD];
+        game.add(introGroup);
+
+        areText = setupSprite("ARE", -48, -18);
+        youText = setupSprite("YOU", 48, -18);
+        readyText = setupSprite("READY", 0, 32);
+        areText.scale.set(0.62, 0.62);
+        youText.scale.set(0.62, 0.62);
+        readyText.scale.set(0.72, 0.72);
+    }
+
+    function setupSprite(name:String, xOff:Float, yOff:Float):FlxSprite
+    {
+        var s = new FlxSprite().loadGraphic(Paths.image(name));
+        s.antialiasing = true; 
+        s.scrollFactor.set();
+        s.screenCenter();
+        s.x += xOff;
+        s.y += yOff;
+        s.alpha = 0.0001; 
+        introGroup.add(s);
+        return s;
+    }
+
+    function resetFlags()
+    {
+        tA1 = false; tY1 = false; tR1 = false;
+        tA2 = false; tY2 = false; tR2 = false;
+    }
+
+    override function onUpdate(elapsed:Float)
+    {
+        super.onUpdate(elapsed);
+        var game = PlayState.instance;
+        if (game == null) return;
+
+        if (game.healthBar != null) {
+            game.healthBar.createFilledBar(0xFFA11326, 0xFF4291E3);
+            game.healthBar.updateBar();
+        }
+
+        var sT:Float = Conductor.instance.songPosition / 1000;
+
+        if (sT >= 22.70 && sT < 23.00 && !tA1) { tA1 = true; introGroup.alpha = 1; vPop(areText, 0.62); }
+        if (sT >= 23.05 && sT < 23.35 && !tY1) { tY1 = true; vPop(youText, 0.62); }
+        if (sT >= 23.40 && sT < 23.70 && !tR1) { tR1 = true; vPop(readyText, 0.72); hide(); }
+
+        if (sT >= 158.40 && sT < 158.70 && !tA2) { 
+            tA2 = true; 
+            areText.alpha = 0.0001; youText.alpha = 0.0001; readyText.alpha = 0.0001;
+            introGroup.alpha = 1; 
+            vPop(areText, 0.62); 
+        }
+        if (sT >= 158.75 && sT < 159.05 && !tY2) { tY2 = true; vPop(youText, 0.62); }
+        if (sT >= 159.10 && sT < 159.40 && !tR2) { tR2 = true; vPop(readyText, 0.72); hide(); }
+    }
+
+    function vPop(s:FlxSprite, target:Float)
+    {
+        s.alpha = 1.0;
+        s.scale.set(4.0, 4.0); 
+        FlxTween.tween(s.scale, {x: target, y: target}, 0.07, {ease: FlxEase.expoOut});
+    }
+
+    function hide()
+    {
+        FlxTween.tween(introGroup, {alpha: 0}, 0.2, {ease: FlxEase.cubeIn, startDelay: 0.6});
+    }
+}
